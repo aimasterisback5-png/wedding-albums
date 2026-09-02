@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connecting 3D Album...</title>
+    <style>
+        body { background: #0c0c0e; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; margin: 0; font-family: sans-serif; }
+        .spin { width: 50px; height: 50px; border: 4px solid #222; border-top-color: #d4af37; border-radius: 50%; animation: s 0.8s linear infinite; }
+        @keyframes s { to { transform: rotate(360deg); } }
+    </style>
+    <script>
+        let attempts = 0;
+        function checkAndReload() {
+            attempts++;
+            fetch(window.location.href, { method: 'HEAD', cache: 'no-store' })
+                .then(r => {
+                    if (r.ok) { window.location.reload(); }
+                    else { setTimeout(checkAndReload, 3000); }
+                })
+                .catch(() => setTimeout(checkAndReload, 3000));
+        }
+        setTimeout(checkAndReload, 2000);
+    </script>
+</head>
+<body>
+    <div class="spin"></div>
+    <h2 style="color: #d4af37; margin-top: 25px; font-size: 18px;">Publishing 3D Album Online...</h2>
+    <p style="color: #888; font-size: 13px;">Please wait, album is deploying automatically.</p>
+</body>
+</html>

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Royal Wedding Album</title>
+    <script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+        html, body { 
+            width: 100%; height: 100%; overflow: hidden; background: #0a0a0a; color: #fff; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            user-select: none; display: flex; flex-direction: column; 
+        }
+
+        header { 
+            height: 48px; background: rgba(18, 18, 18, 0.95); display: flex; justify-content: space-between; 
+            align-items: center; padding: 0 15px; border-bottom: 1px solid #222; z-index: 100; flex-shrink: 0; 
+        }
+        .hdr-left { display: flex; align-items: center; gap: 8px; }
+        .hdr-title { font-size: 14px; font-weight: bold; color: #d4af37; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px; }
+        
+        .hdr-controls { display: flex; align-items: center; gap: 8px; }
+
+        .btn-ctrl {
+            background: #252525; border: 1px solid #3d3d3d; color: #fff;
+            padding: 5px 10px; border-radius: 20px; font-size: 11px; font-weight: bold;
+            cursor: pointer; display: flex; align-items: center; gap: 4px; transition: 0.2s;
+        }
+        .btn-ctrl:active { transform: scale(0.95); }
+        .btn-ctrl.active { background: #d4af37; color: #000; border-color: #d4af37; box-shadow: 0 0 10px rgba(212,175,55,0.4); }
+
+        .music-btn { 
+            background: #d4af37; border: none; width: 32px; height: 32px; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; cursor: pointer; 
+            color: #000; font-size: 14px; box-shadow: 0 2px 8px rgba(212,175,55,0.4); 
+        }
+        .music-btn.muted { background: #444; color: #888; box-shadow: none; }
+
+        .flip-stage { flex: 1; width: 100%; display: flex; justify-content: center; align-items: center; position: relative; overflow: hidden; }
+        #book-box { display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; }
+        .page { background-color: #121212; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+        .page img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; display: block; }
+        
+        .nav-arrow { 
+            position: absolute; top: 50%; transform: translateY(-50%); 
+            background: rgba(0, 0, 0, 0.55); border: 1px solid rgba(255,255,255,0.2); 
+            color: white; width: 38px; height: 55px; font-size: 20px; border-radius: 6px; 
+            cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 60; 
+        }
+        .nav-prev { left: 8px; }
+        .nav-next { right: 8px; }
+
+        footer { 
+            height: 38px; background: #121212; display: flex; justify-content: space-between; 
+            align-items: center; padding: 0 15px; border-top: 1px solid #222; font-size: 11px; color: #777; z-index: 100; flex-shrink: 0; 
+        }
+        .page-num { color: #d4af37; font-weight: bold; }
+
+        #rotateOverlay {
+            display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.94);
+            z-index: 9999; flex-direction: column; justify-content: center; align-items: center;
+            text-align: center; padding: 25px; cursor: pointer;
+        }
+        .phone-rotate-icon {
+            width: 55px; height: 85px; border: 3px solid #d4af37; border-radius: 12px;
+            animation: rotateAnimation 2s ease-in-out infinite; margin-bottom: 25px;
+            position: relative;
+        }
+        .phone-rotate-icon::after {
+            content: ''; position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
+            width: 8px; height: 8px; border-radius: 50%; background: #d4af37;
+        }
+        @keyframes rotateAnimation {
+            0%, 20% { transform: rotate(0deg); }
+            50%, 80% { transform: rotate(90deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        #loaderOverlay {
+            position: fixed; inset: 0; background: #0c0c0e; z-index: 998;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .spinner {
+            width: 44px; height: 44px; border: 4px solid rgba(212,175,55,0.15);
+            border-top-color: #d4af37; border-radius: 50%; animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body onclick="handleUserTap()">
+
+    <div id="rotateOverlay" onclick="tryLockLandscape()">
+        <div class="phone-rotate-icon"></div>
+        <h3 style="color:#d4af37; font-size:18px; margin-bottom:8px;">Rotate Your Mobile</h3>
+        <p style="color:#aaa; font-size:13px; max-width:280px; line-height:1.4;">Rotate to landscape mode for real cinematic 2-page wedding album spread.</p>
+        <span style="color:#666; font-size:11px; margin-top:15px; border:1px solid #333; padding:6px 14px; border-radius:20px;">Tap anywhere to continue</span>
+    </div>
+
+    <div id="loaderOverlay">
+        <div class="spinner"></div>
+        <h3 style="color:#d4af37; margin-top:20px; font-size:16px;">Opening 3D Album</h3>
+        <p style="color:#666; font-size:12px; margin-top:6px;">Syncing with cloud server...</p>
+    </div>
+
+    <audio id="bgSong" loop preload="auto"><source src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=romantic-wedding-113222.mp3" type="audio/mp3"></audio>
+
+    <header>
+        <div class="hdr-left">
+            <button id="btnMusic" class="music-btn muted" onclick="toggleMusic(event)">🎵</button>
+            <div class="hdr-title">Royal Wedding Album</div>
+        </div>
+        <div class="hdr-controls">
+            <button id="btnAutoPlay" class="btn-ctrl" onclick="toggleAutoPlay(event)">▶ Auto Flip</button>
+            <button class="btn-ctrl" onclick="toggleFullScreen(event)">⛶ Full</button>
+        </div>
+    </header>
+
+    <div class="flip-stage">
+        <button class="nav-arrow nav-prev" onclick="manualPrev()">❮</button>
+        <div id="book-box">
+            <div id="book">
+                <div class="page" data-density="hard"><img src="page_1_l.jpg" alt="Page 1" loading="eager"></div><div class="page" data-density="soft"><img src="page_1_r.jpg" alt="Page 2" loading="eager"></div><div class="page" data-density="soft"><img src="page_2_l.jpg" alt="Page 3" loading="eager"></div><div class="page" data-density="soft"><img src="page_2_r.jpg" alt="Page 4" loading="eager"></div><div class="page" data-density="soft"><img src="page_3_l.jpg" alt="Page 5" loading="eager"></div><div class="page" data-density="soft"><img src="page_3_r.jpg" alt="Page 6" loading="eager"></div><div class="page" data-density="soft"><img src="page_4_l.jpg" alt="Page 7" loading="eager"></div><div class="page" data-density="soft"><img src="page_4_r.jpg" alt="Page 8" loading="eager"></div><div class="page" data-density="soft"><img src="page_5_l.jpg" alt="Page 9" loading="eager"></div><div class="page" data-density="soft"><img src="page_5_r.jpg" alt="Page 10" loading="eager"></div><div class="page" data-density="soft"><img src="page_6_l.jpg" alt="Page 11" loading="eager"></div><div class="page" data-density="soft"><img src="page_6_r.jpg" alt="Page 12" loading="eager"></div><div class="page" data-density="soft"><img src="page_7_l.jpg" alt="Page 13" loading="eager"></div><div class="page" data-density="soft"><img src="page_7_r.jpg" alt="Page 14" loading="eager"></div><div class="page" data-density="soft"><img src="page_8_l.jpg" alt="Page 15" loading="eager"></div><div class="page" data-density="soft"><img src="page_8_r.jpg" alt="Page 16" loading="eager"></div><div class="page" data-density="soft"><img src="page_9_l.jpg" alt="Page 17" loading="eager"></div><div class="page" data-density="soft"><img src="page_9_r.jpg" alt="Page 18" loading="eager"></div><div class="page" data-density="soft"><img src="page_10_l.jpg" alt="Page 19" loading="eager"></div><div class="page" data-density="soft"><img src="page_10_r.jpg" alt="Page 20" loading="eager"></div><div class="page" data-density="soft"><img src="page_11_l.jpg" alt="Page 21" loading="eager"></div><div class="page" data-density="soft"><img src="page_11_r.jpg" alt="Page 22" loading="eager"></div><div class="page" data-density="soft"><img src="page_12_l.jpg" alt="Page 23" loading="eager"></div><div class="page" data-density="soft"><img src="page_12_r.jpg" alt="Page 24" loading="eager"></div><div class="page" data-density="soft"><img src="page_13_l.jpg" alt="Page 25" loading="eager"></div><div class="page" data-density="soft"><img src="page_13_r.jpg" alt="Page 26" loading="eager"></div><div class="page" data-density="soft"><img src="page_14_l.jpg" alt="Page 27" loading="eager"></div><div class="page" data-density="soft"><img src="page_14_r.jpg" alt="Page 28" loading="eager"></div><div class="page" data-density="soft"><img src="page_15_l.jpg" alt="Page 29" loading="eager"></div><div class="page" data-density="soft"><img src="page_15_r.jpg" alt="Page 30" loading="eager"></div><div class="page" data-density="soft"><img src="page_16_l.jpg" alt="Page 31" loading="eager"></div><div class="page" data-density="soft"><img src="page_16_r.jpg" alt="Page 32" loading="eager"></div><div class="page" data-density="soft"><img src="page_17_l.jpg" alt="Page 33" loading="eager"></div><div class="page" data-density="soft"><img src="page_17_r.jpg" alt="Page 34" loading="eager"></div><div class="page" data-density="soft"><img src="page_18_l.jpg" alt="Page 35" loading="eager"></div><div class="page" data-density="soft"><img src="page_18_r.jpg" alt="Page 36" loading="eager"></div><div class="page" data-density="soft"><img src="page_19_l.jpg" alt="Page 37" loading="eager"></div><div class="page" data-density="soft"><img src="page_19_r.jpg" alt="Page 38" loading="eager"></div><div class="page" data-density="soft"><img src="page_20_l.jpg" alt="Page 39" loading="eager"></div><div class="page" data-density="soft"><img src="page_20_r.jpg" alt="Page 40" loading="eager"></div><div class="page" data-density="soft"><img src="page_21_l.jpg" alt="Page 41" loading="eager"></div><div class="page" data-density="soft"><img src="page_21_r.jpg" alt="Page 42" loading="eager"></div><div class="page" data-density="soft"><img src="page_22_l.jpg" alt="Page 43" loading="eager"></div><div class="page" data-density="soft"><img src="page_22_r.jpg" alt="Page 44" loading="eager"></div><div class="page" data-density="soft"><img src="page_23_l.jpg" alt="Page 45" loading="eager"></div><div class="page" data-density="soft"><img src="page_23_r.jpg" alt="Page 46" loading="eager"></div><div class="page" data-density="soft"><img src="page_24_l.jpg" alt="Page 47" loading="eager"></div><div class="page" data-density="soft"><img src="page_24_r.jpg" alt="Page 48" loading="eager"></div><div class="page" data-density="soft"><img src="page_25_l.jpg" alt="Page 49" loading="eager"></div><div class="page" data-density="soft"><img src="page_25_r.jpg" alt="Page 50" loading="eager"></div><div class="page" data-density="soft"><img src="page_26_l.jpg" alt="Page 51" loading="eager"></div><div class="page" data-density="soft"><img src="page_26_r.jpg" alt="Page 52" loading="eager"></div><div class="page" data-density="soft"><img src="page_27_l.jpg" alt="Page 53" loading="eager"></div><div class="page" data-density="soft"><img src="page_27_r.jpg" alt="Page 54" loading="eager"></div><div class="page" data-density="soft"><img src="page_28_l.jpg" alt="Page 55" loading="eager"></div><div class="page" data-density="soft"><img src="page_28_r.jpg" alt="Page 56" loading="eager"></div><div class="page" data-density="soft"><img src="page_29_l.jpg" alt="Page 57" loading="eager"></div><div class="page" data-density="soft"><img src="page_29_r.jpg" alt="Page 58" loading="eager"></div><div class="page" data-density="soft"><img src="page_30_l.jpg" alt="Page 59" loading="eager"></div><div class="page" data-density="soft"><img src="page_30_r.jpg" alt="Page 60" loading="eager"></div><div class="page" data-density="soft"><img src="page_31_l.jpg" alt="Page 61" loading="eager"></div><div class="page" data-density="soft"><img src="page_31_r.jpg" alt="Page 62" loading="eager"></div><div class="page" data-density="soft"><img src="page_32_l.jpg" alt="Page 63" loading="eager"></div><div class="page" data-density="soft"><img src="page_32_r.jpg" alt="Page 64" loading="eager"></div><div class="page" data-density="soft"><img src="page_33_l.jpg" alt="Page 65" loading="eager"></div><div class="page" data-density="soft"><img src="page_33_r.jpg" alt="Page 66" loading="eager"></div><div class="page" data-density="soft"><img src="page_34_l.jpg" alt="Page 67" loading="eager"></div><div class="page" data-density="soft"><img src="page_34_r.jpg" alt="Page 68" loading="eager"></div><div class="page" data-density="soft"><img src="page_35_l.jpg" alt="Page 69" loading="eager"></div><div class="page" data-density="soft"><img src="page_35_r.jpg" alt="Page 70" loading="eager"></div><div class="page" data-density="soft"><img src="page_36_l.jpg" alt="Page 71" loading="eager"></div><div class="page" data-density="soft"><img src="page_36_r.jpg" alt="Page 72" loading="eager"></div><div class="page" data-density="soft"><img src="page_37_l.jpg" alt="Page 73" loading="eager"></div><div class="page" data-density="soft"><img src="page_37_r.jpg" alt="Page 74" loading="eager"></div><div class="page" data-density="soft"><img src="page_38_l.jpg" alt="Page 75" loading="eager"></div><div class="page" data-density="soft"><img src="page_38_r.jpg" alt="Page 76" loading="eager"></div><div class="page" data-density="soft"><img src="page_39_l.jpg" alt="Page 77" loading="eager"></div><div class="page" data-density="soft"><img src="page_39_r.jpg" alt="Page 78" loading="eager"></div><div class="page" data-density="soft"><img src="page_40_l.jpg" alt="Page 79" loading="eager"></div><div class="page" data-density="soft"><img src="page_40_r.jpg" alt="Page 80" loading="eager"></div><div class="page" data-density="soft"><img src="page_41_l.jpg" alt="Page 81" loading="eager"></div><div class="page" data-density="soft"><img src="page_41_r.jpg" alt="Page 82" loading="eager"></div><div class="page" data-density="soft"><img src="page_42_l.jpg" alt="Page 83" loading="eager"></div><div class="page" data-density="soft"><img src="page_42_r.jpg" alt="Page 84" loading="eager"></div><div class="page" data-density="soft"><img src="page_43_l.jpg" alt="Page 85" loading="eager"></div><div class="page" data-density="soft"><img src="page_43_r.jpg" alt="Page 86" loading="eager"></div><div class="page" data-density="soft"><img src="page_44_l.jpg" alt="Page 87" loading="eager"></div><div class="page" data-density="soft"><img src="page_44_r.jpg" alt="Page 88" loading="eager"></div><div class="page" data-density="soft"><img src="page_45_l.jpg" alt="Page 89" loading="eager"></div><div class="page" data-density="soft"><img src="page_45_r.jpg" alt="Page 90" loading="eager"></div><div class="page" data-density="soft"><img src="page_46_l.jpg" alt="Page 91" loading="eager"></div><div class="page" data-density="soft"><img src="page_46_r.jpg" alt="Page 92" loading="eager"></div><div class="page" data-density="soft"><img src="page_47_l.jpg" alt="Page 93" loading="eager"></div><div class="page" data-density="soft"><img src="page_47_r.jpg" alt="Page 94" loading="eager"></div><div class="page" data-density="soft"><img src="page_48_l.jpg" alt="Page 95" loading="eager"></div><div class="page" data-density="soft"><img src="page_48_r.jpg" alt="Page 96" loading="eager"></div><div class="page" data-density="soft"><img src="page_49_l.jpg" alt="Page 97" loading="eager"></div><div class="page" data-density="soft"><img src="page_49_r.jpg" alt="Page 98" loading="eager"></div><div class="page" data-density="soft"><img src="page_50_l.jpg" alt="Page 99" loading="eager"></div><div class="page" data-density="soft"><img src="page_50_r.jpg" alt="Page 100" loading="eager"></div><div class="page" data-density="soft"><img src="page_51_l.jpg" alt="Page 101" loading="eager"></div><div class="page" data-density="soft"><img src="page_51_r.jpg" alt="Page 102" loading="eager"></div><div class="page" data-density="soft"><img src="page_52_l.jpg" alt="Page 103" loading="eager"></div><div class="page" data-density="soft"><img src="page_52_r.jpg" alt="Page 104" loading="eager"></div><div class="page" data-density="soft"><img src="page_53_l.jpg" alt="Page 105" loading="eager"></div><div class="page" data-density="hard"><img src="page_53_r.jpg" alt="Page 106" loading="eager"></div>
+            </div>
+        </div>
+        <button class="nav-arrow nav-next" onclick="manualNext()">❯</button>
+    </div>
+
+    <footer>
+        <span>Finger Touch / Swipe to turn sheets</span>
+        <span class="page-num" id="pageCount">Cover</span>
+    </footer>
+
+    <script>
+        const pagesTotal = 106;
+        let flipBook = null, isPlaying = false, autoPlayTimer = null, isAutoPlaying = false;
+        const audio = document.getElementById('bgSong'), mBtn = document.getElementById('btnMusic'), autoBtn = document.getElementById('btnAutoPlay');
+
+        function handleUserTap() {
+            if (!isPlaying) {
+                audio.play().then(() => { isPlaying = true; mBtn.classList.remove('muted'); }).catch(() => {});
+            }
+        }
+
+        function toggleMusic(e) {
+            e.stopPropagation();
+            if (audio.paused) { audio.play(); isPlaying = true; mBtn.classList.remove('muted'); }
+            else { audio.pause(); isPlaying = false; mBtn.classList.add('muted'); }
+        }
+
+        function toggleAutoPlay(e) {
+            if(e) e.stopPropagation();
+            handleUserTap();
+
+            if (isAutoPlaying) {
+                stopAutoPlay();
+            } else {
+                startAutoPlay();
+            }
+        }
+
+        function startAutoPlay() {
+            isAutoPlaying = true;
+            autoBtn.innerText = "⏸ Pause";
+            autoBtn.classList.add('active');
+
+            if (autoPlayTimer) clearInterval(autoPlayTimer);
+            autoPlayTimer = setInterval(() => {
+                if (!flipBook) return;
+                const cur = flipBook.getCurrentPageIndex();
+                if (cur >= pagesTotal - 1) {
+                    flipBook.flip(0);
+                } else {
+                    flipBook.flipNext();
+                }
+            }, 3500);
+        }
+
+        function stopAutoPlay() {
+            isAutoPlaying = false;
+            autoBtn.innerText = "▶ Auto Flip";
+            autoBtn.classList.remove('active');
+            if (autoPlayTimer) { clearInterval(autoPlayTimer); autoPlayTimer = null; }
+        }
+
+        function manualNext() {
+            if(flipBook) { flipBook.flipNext(); }
+            resetAutoPlayOnUserTouch();
+        }
+
+        function manualPrev() {
+            if(flipBook) { flipBook.flipPrev(); }
+            resetAutoPlayOnUserTouch();
+        }
+
+        function resetAutoPlayOnUserTouch() {
+            if (isAutoPlaying) {
+                clearInterval(autoPlayTimer);
+                autoPlayTimer = setInterval(() => {
+                    if (flipBook) flipBook.flipNext();
+                }, 4000);
+            }
+        }
+
+        function toggleFullScreen(e) {
+            if(e) e.stopPropagation();
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+                tryLockLandscape();
+            } else {
+                document.exitFullscreen().catch(() => {});
+            }
+        }
+
+        function tryLockLandscape() {
+            document.getElementById('rotateOverlay').style.display = 'none';
+            if (screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock('landscape').catch(() => {});
+            }
+        }
+
+        function checkMobileOrientation() {
+            const isPortrait = window.innerHeight > window.innerWidth;
+            const isMobile = window.innerWidth < 900 || window.innerHeight < 600;
+            const overlay = document.getElementById('rotateOverlay');
+
+            if (isMobile && isPortrait) {
+                overlay.style.display = 'flex';
+            } else {
+                overlay.style.display = 'none';
+            }
+        }
+
+        function initResponsiveFlipbook() {
+            const screenW = window.innerWidth, screenH = window.innerHeight - 86, isPortrait = screenH > screenW;
+            let bW, bH;
+
+            if (isPortrait) {
+                bW = Math.floor(Math.min(screenW * 0.94, 540));
+                bH = Math.floor(Math.min(screenH * 0.88, bW * 1.45));
+            } else {
+                bH = Math.floor(Math.min(screenH * 0.94, 900));
+                bW = Math.floor(Math.min((screenW * 0.94) / 2, bH * 0.72));
+            }
+
+            if (flipBook) { try { flipBook.destroy(); } catch (e) {} }
+
+            flipBook = new St.PageFlip(document.getElementById('book'), {
+                width: bW, height: bH, size: "fixed", minWidth: 200, maxWidth: 1600, minHeight: 280, maxHeight: 1800, 
+                maxShadowOpacity: 0.5, showCover: true, mobileScrollSupport: false, usePortrait: isPortrait, 
+                startPage: 0, flippingTime: 650
+            });
+
+            flipBook.loadFromHTML(document.querySelectorAll('.page'));
+
+            flipBook.on('flip', (e) => {
+                document.getElementById('pageCount').innerText = "Page " + (e.data + 1) + " of " + pagesTotal;
+                handleUserTap();
+            });
+
+            setTimeout(() => {
+                const ldr = document.getElementById('loaderOverlay');
+                if(ldr) ldr.style.display = 'none';
+            }, 600);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initResponsiveFlipbook();
+            checkMobileOrientation();
+        });
+
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                initResponsiveFlipbook();
+                checkMobileOrientation();
+            }, 300);
+        });
+
+        window.addEventListener('resize', () => {
+            clearTimeout(window.rt);
+            window.rt = setTimeout(() => {
+                initResponsiveFlipbook();
+                checkMobileOrientation();
+            }, 250);
+        });
+    </script>
+</body>
+</html>
